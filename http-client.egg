@@ -1,0 +1,9 @@
+;; -*- Scheme -*-
+((synopsis "High-level HTTP client library")
+ (author "Peter Bex")
+ (category net)
+ (license "BSD")
+ (dependencies intarweb uri-common simple-md5 sendfile
+               srfi-1 srfi-13 srfi-18 srfi-69)
+ (test-dependencies test)
+ (components (extension http-client (csc-options "-O3"))))
