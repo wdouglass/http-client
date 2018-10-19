@@ -123,7 +123,7 @@
                     (values (uri-username uri) (uri-password uri)))))
 
 (define client-software
-  (make-parameter (list (list "CHICKEN Scheme HTTP-client" "1.0" #f))))
+  (make-parameter (list (list "CHICKEN Scheme HTTP-client" "1.1" #f))))
 
 
 (define (with-mutex m thunk)
@@ -661,7 +661,7 @@
                                         (list (uri->string uri))
                                         'redirect-depth-exceeded
                                         'uri uri 'new-uri new-uri
-                                        'request req))))
+                                        'request req 'response response))))
               ;; TODO: Test this
               ((305)             ; Use proxy (for this request only)
                (cleanup! #t)
