@@ -1,3 +1,3 @@
-(repo git "http://code.more-magic.net/{egg-name}")
-(uri targz "http://code.more-magic.net/{egg-name}/snapshot/{egg-name}-{egg-release}.tar.gz")
+(repo git "https://code.more-magic.net/{egg-name}")
+(uri targz "https://code.more-magic.net/{egg-name}/snapshot/{egg-name}-{egg-release}.tar.gz")
 (release "1.0")
