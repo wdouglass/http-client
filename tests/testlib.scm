@@ -10,13 +10,13 @@
 (define-syntax test-error*
   (syntax-rules ()
     ((_ ?msg (?error-type ...) ?expr)
-     (let-syntax ((expression:
+     (let-syntax ((expression
                    (syntax-rules ()
                      ((_ ?expr)
                       (condition-case (begin ?expr "<no error thrown>")
                                       ((?error-type ...) '(?error-type ...))
                                       (exn () (##sys#slot exn 1)))))))
-       (test ?msg '(?error-type ...) (expression: ?expr))))
+       (test ?msg '(?error-type ...) (expression ?expr))))
     ((_ ?msg ?error-type ?expr)
      (test-error* ?msg (?error-type) ?expr))
     ((_ ?error-type ?expr)
