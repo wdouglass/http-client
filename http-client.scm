@@ -1,7 +1,7 @@
 ;;;
 ;;; Convenient HTTP client library
 ;;;
-;; Copyright (c) 2008-2018, Peter Bex
+;; Copyright (c) 2008-2020, Peter Bex
 ;; Parts copyright (c) 2000-2004, Felix L. Winkelmann
 ;; All rights reserved.
 ;;
@@ -123,7 +123,7 @@
                     (values (uri-username uri) (uri-password uri)))))
 
 (define client-software
-  (make-parameter (list (list "CHICKEN Scheme HTTP-client" "1.1" #f))))
+  (make-parameter (list (list "http-client" "1.2" "CHICKEN Scheme HTTP-client"))))
 
 
 (define (with-mutex m thunk)
