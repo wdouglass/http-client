@@ -1,7 +1,7 @@
 ;;;
 ;;; Convenient HTTP client library
 ;;;
-;; Copyright (c) 2008-2020, Peter Bex
+;; Copyright (c) 2008-2021, Peter Bex
 ;; Parts copyright (c) 2000-2004, Felix L. Winkelmann
 ;; All rights reserved.
 ;;
@@ -870,7 +870,7 @@
                          (else "Unexpected server response: ~A ~A"))
                 (response-code response) (response-reason response))
 	      ;; arguments
-	      (list (uri->string uri))
+	      (list (request-method req) (uri->string uri))
               ;; Specific type
               (case (response-class response)
                 ((400) 'client-error)
