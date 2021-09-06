@@ -591,7 +591,7 @@
                                           host: #f port: #f scheme: #f)))
                  ;; Update path only when it needs to be updated, to
                  ;; avoid unnecessarily mangling it (see #1448)
-                 (req-uri (if (not (memq (uri-path req-uri) '(() #f)))
+                 (req-uri (if (not (member (uri-path req-uri) '(() #f (/ "") (""))))
                               req-uri
                               (update-uri req-uri path: '(/ ""))))
                  (request (write-request (update-request req uri: req-uri)))
