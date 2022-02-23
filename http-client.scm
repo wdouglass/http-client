@@ -1,7 +1,7 @@
 ;;;
 ;;; Convenient HTTP client library
 ;;;
-;; Copyright (c) 2008-2021, Peter Bex
+;; Copyright (c) 2008-2022, Peter Bex
 ;; Parts copyright (c) 2000-2004, Felix L. Winkelmann
 ;; All rights reserved.
 ;;
@@ -52,7 +52,6 @@
         (chicken sort) (chicken io) (chicken file posix) (chicken format)
         (chicken process-context) (chicken process-context posix)
         (chicken port) (chicken file) (chicken tcp) (chicken condition)
-        (chicken pathname)
         intarweb uri-common simple-md5 sendfile)
 
 ;; Major TODOs:
@@ -720,8 +719,6 @@
                      (filename (or (kv-ref keys filename:)
                                    (and (port? file) (port-name file))
                                    (and (string? file) file)))
-                     (filename (and filename
-                                    (pathname-strip-directory filename)))
                      (h (headers `((content-disposition
                                     #(form-data ((name . ,(car entry))
                                                  (filename . ,filename))))
