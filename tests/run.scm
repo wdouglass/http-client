@@ -3,6 +3,8 @@
 (include "../http-client.scm")
 (import http-client)
 
+(import (chicken port))
+
 (include "testlib.scm")
 
 (test-begin "http-client")
@@ -145,7 +147,7 @@
       (test "Body was sent correctly"
             "lala=testing&another=data&more=stuff" (log-body log))))
 
-  (test-group "alist form data body with file port"
+  (test-group "alist form data body with string port"
     (let* ((string-port (open-input-string "the file's contents"))
            (log (with-server-response
                  (lambda ()
@@ -153,6 +155,100 @@
                     "http://example.com"
                     `((lala . "testing")
                       (the-file file: ,string-port
+                                filename: "str")
+                      ("more" . stuff))
+                    read-string))
+                 "HTTP/1.0 200 OK\r\n\r\n"))
+           (req (log-request log))
+           (h (request-headers req))
+           (boundary (header-param 'boundary 'content-type h))
+           (expected-data
+            (conc
+             "--" boundary "\r\n"
+             "Content-Disposition: form-data; name=\"lala\"\r\n\r\n"
+             "testing\r\n"
+             "--" boundary "\r\n"
+             "Content-Disposition: form-data; name=\"the-file\"; "
+             "filename=\"str\"\r\n"
+             "Content-Type: application/octet-stream\r\n\r\n"
+             "the file's contents\r\n"
+             "--" boundary "\r\n"
+             "Content-Disposition: form-data; name=\"more\"\r\n\r\n"
+             "stuff\r\n"
+             "--" boundary "--\r\n")))
+
+      (test "Request method" 'POST (request-method req))
+      (test "Content type is multipart"
+            'multipart/form-data
+            (header-value 'content-type h))
+      (test "Content-length was set"
+            504 (header-value 'content-length h))
+      (test "Version is the default HTTP version of 1.1"
+            '(1 . 1)
+            (cons (request-major req) (request-minor req)))
+      (test "Transfer encoding is not set"
+            #f
+            (header-value 'transfer-encoding (request-headers req)))
+      (test "Body contains the file and other data, delimited by the boundary"
+            expected-data (log-body log))))
+
+  (test-group "alist form data body with string port using HTTP/1.0"
+    (let* ((string-port (open-input-string "the file's contents"))
+           (uri (uri-reference "http://example.com"))
+           (req (make-request uri: uri method: 'POST
+                              major: 1 minor: 0))
+           (log (with-server-response
+                 (lambda ()
+                   (with-input-from-request
+                    req
+                    `((lala . "testing")
+                      (the-file file: ,string-port
+                                filename: "str")
+                      ("more" . stuff))
+                    read-string))
+                 "HTTP/1.0 200 OK\r\n\r\n"))
+           (req (log-request log))
+           (h (request-headers req))
+           (boundary (header-param 'boundary 'content-type h))
+           (expected-data
+            (conc
+             "--" boundary "\r\n"
+             "Content-Disposition: form-data; name=\"lala\"\r\n\r\n"
+             "testing\r\n"
+             "--" boundary "\r\n"
+             "Content-Disposition: form-data; name=\"the-file\"; "
+             "filename=\"str\"\r\n"
+             "Content-Type: application/octet-stream\r\n\r\n"
+             "the file's contents\r\n"
+             "--" boundary "\r\n"
+             "Content-Disposition: form-data; name=\"more\"\r\n\r\n"
+             "stuff\r\n"
+             "--" boundary "--\r\n")))
+
+      (test "Request method" 'POST (request-method req))
+      (test "Content type is multipart"
+            'multipart/form-data
+            (header-value 'content-type h))
+      (test "Content-length was set"
+            504 (header-value 'content-length h))
+      (test "Version is correct"
+            '(1 . 0)
+            (cons (request-major req) (request-minor req)))
+      (test "Transfer encoding is not set"
+            #f
+            (header-value 'transfer-encoding (request-headers req)))
+      (test "Body contains the file and other data, delimited by the boundary"
+            expected-data (log-body log))))
+
+  (test-group "alist form data body with custom port"
+    (let* ((string-port (open-input-string "the file's contents"))
+           (custom-port (make-input-port (lambda () (read-char string-port)) (constantly #t) (lambda () (close-input-port string-port))))
+           (log (with-server-response
+                 (lambda ()
+                   (with-input-from-request
+                    "http://example.com"
+                    `((lala . "testing")
+                      (the-file file: ,custom-port
                                 filename: "str")
                       ("more" . stuff))
                     read-string))
@@ -190,8 +286,9 @@
       (test "Body contains the file and other data, delimited by the boundary"
             expected-data (log-body log))))
 
-  (test-group "alist form data body with file port using HTTP/1.0"
+  (test-group "alist form data body with custom port using HTTP/1.0"
     (let* ((string-port (open-input-string "the file's contents"))
+           (custom-port (make-input-port (lambda () (read-char string-port)) (constantly #t) (lambda () (close-input-port string-port))))
            (uri (uri-reference "http://example.com"))
            (req (make-request uri: uri method: 'POST
                               major: 1 minor: 0))
@@ -200,7 +297,7 @@
                    (with-input-from-request
                     req
                     `((lala . "testing")
-                      (the-file file: ,string-port
+                      (the-file file: ,custom-port
                                 filename: "str")
                       ("more" . stuff))
                     read-string))

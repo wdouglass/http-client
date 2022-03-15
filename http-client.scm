@@ -756,6 +756,14 @@
                         entry))
             entries))
 
+(define (maybe-string-port-length port)
+  (and (eq? (##sys#slot port 7) 'string) ; type
+       (let ((size (##sys#slot port 11))
+             (string (##sys#slot port 12)))
+         (assert (integer? size))       ; Check our assumptions; this is pretty unsafe code
+         (assert (string? string))
+         size)))
+
 (define (calculate-chunk-size entries)
   (call/cc
    (lambda (return)
@@ -763,12 +771,16 @@
              (fold (lambda (chunk total-size)
                      (if (pair? chunk)
                          (if (eq? 'port (car chunk))
+                             (let ((str-len (maybe-string-port-length (cdr chunk))))
+                               (if str-len
+                                   (+ total-size str-len)
+                                   ;; We can't calculate port lengths
+                                   ;; for non-string-ports.  Let's just
+                                   ;; punt and hope the server won't
+                                   ;; return "411 Length Required"...
+                                   ;; (TODO: maybe try seeking it?)
+                                   (return #f)))
                              ;; Should be a file otherwise.
-                             ;; We can't calculate port lengths.
-                             ;; Let's just punt and hope the server
-                             ;; won't return "411 Length Required"...
-                             ;; (TODO: maybe try seeking it?)
-                             (return #f)
                              (+ total-size (file-size (cdr chunk))))
                          (+ total-size (string-length chunk))))
                    total-size
