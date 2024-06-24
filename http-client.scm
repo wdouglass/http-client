@@ -733,6 +733,7 @@
                 (list "--" boundary "\r\n" hs "\r\n"
                       (cond ((string? file) (cons 'file file))
                             ((port? file) (cons 'port file))
+                            ((procedure? file) (cons 'procedure file))
                             ((eq? keys #t) "")
                             (else (->string keys)))
                   ;; The next boundary must always start on a new line
@@ -744,12 +745,17 @@
   (for-each (lambda (entry)
               (for-each (lambda (chunk)
                           (if (pair? chunk)
-                              (let ((p (if (eq? 'file (car chunk))
-                                           (open-input-file (cdr chunk))
-                                           ;; Should be a port otherwise
-                                           (cdr chunk))))
+                              (let ((p (case (car chunk)
+                                         ((file) (open-input-file (cdr chunk)))
+                                         ((port) (cdr chunk))
+                                         ((procedure) ((cdr chunk)))
+                                         (else (http-client-error
+                                                'write-chunks
+                                                "The a file chunk must be either a string representing a filename, an open port, or a thunk that returns an open port"
+                                                '()
+                                                'multipart-file-error)))))
                                 (handle-exceptions exn
-                                  (begin (close-input-port p) (raise exn))
+                                    (begin (close-input-port p) (raise exn))
                                   (sendfile p output-port))
                                 (close-input-port p))
                               (display chunk output-port)))
@@ -770,18 +776,18 @@
      (fold (lambda (chunks total-size)
              (fold (lambda (chunk total-size)
                      (if (pair? chunk)
-                         (if (eq? 'port (car chunk))
-                             (let ((str-len (maybe-string-port-length (cdr chunk))))
-                               (if str-len
-                                   (+ total-size str-len)
-                                   ;; We can't calculate port lengths
-                                   ;; for non-string-ports.  Let's just
-                                   ;; punt and hope the server won't
-                                   ;; return "411 Length Required"...
-                                   ;; (TODO: maybe try seeking it?)
-                                   (return #f)))
-                             ;; Should be a file otherwise.
-                             (+ total-size (file-size (cdr chunk))))
+                         (if (eq? 'file (car chunk))
+                             (+ total-size (file-size (cdr chunk)))
+                             (let ((p (if (eq? 'port (car chunk)) (cdr chunk) ((cdr chunk)))))
+                               (let ((str-len (maybe-string-port-length (cdr chunk))))
+                                 (if str-len
+                                     (+ total-size str-len)
+                                     ;; We can't calculate port lengths
+                                     ;; for non-string-ports.  Let's just
+                                     ;; punt and hope the server won't
+                                     ;; return "411 Length Required"...
+                                     ;; (TODO: maybe try seeking it?)
+                                     (return #f)))))
                          (+ total-size (string-length chunk))))
                    total-size
                    chunks))
